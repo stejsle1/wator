@@ -1,5 +1,7 @@
 from setuptools import setup, find_packages
-
+from distutils.extension import Extension
+from Cython.Build import cythonize
+import numpy
 
 with open('README') as f:
     long_description = ''.join(f.readlines())
@@ -7,18 +9,23 @@ with open('README') as f:
 
 setup(
    name='wator',
-   version='0.1',
-   keywords='wator simulation numpy',
+   version='0.2',
+   keywords='wator simulation numpy fish shark',
    description='Python simulation of WaTor',
+   ext_modules=cythonize([Extension('wator.wator', ['wator/wator.pyx'],
+                                   include_dirs=[numpy.get_include()])],
+                                   language_level=3),
+   include_dirs=[numpy.get_include()],
+   install_requires=[
+        'Cython',
+        'NumPy',
+        'pytest',
+   ],
    long_description=long_description,
    author='Lenka Stejskalova',
    author_email='stejsle1@fit.cvut.cz',
    license='Public Domain',
    url='https://github.com/stejsle1/wator',
-   install_requires=[
-        'numpy',
-        'pytest',
-   ],
    classifiers=[
         'License :: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication',
         'Operating System :: POSIX :: Linux',
