@@ -1,5 +1,9 @@
 from PyQt5 import QtWidgets, QtGui, QtCore, QtSvg, uic
 import numpy
+from wator import WaTor
+import time
+import os.path
+
 
 CELL_SIZE = 32
 
@@ -18,9 +22,10 @@ def logical_to_pixels(row, column):
 
 
 class GridWidget(QtWidgets.QWidget):
-    def __init__(self, array):
+    def __init__(self, array, energy):
         super().__init__()  # musime zavolat konstruktor predka
         self.array = array
+        self.energy = energy
         # nastavime velikost podle velikosti matice, jinak je nas widget prilis maly
         size = logical_to_pixels(*array.shape)
         self.setMinimumSize(*size)
@@ -34,15 +39,17 @@ class GridWidget(QtWidgets.QWidget):
         # Pokud jsme v matici, aktualizujeme data
         if 0 <= row < self.array.shape[0] and 0 <= column < self.array.shape[1]:
             self.array[row, column] = self.selected
+            if self.selected < 0:
+               self.energy[row, column] = 5
 
             # timto zajistime prekresleni widgetu v miste zmeny:
             # (pro Python 3.4 a nizsi volejte jen self.update() bez argumentu)
-            self.update(*logical_to_pixels(row, column), CELL_SIZE, CELL_SIZE)    
-        
+            self.update(*logical_to_pixels(row, column), CELL_SIZE, CELL_SIZE)
+
     # vzdycky, kdyz je treba neco prekreslit, kdyz je treba, reaguje na udalost
-    # metoda, protoze nejde pouzit v connect(slot)    
+    # metoda, protoze nejde pouzit v connect(slot)
     def paintEvent(self, event):
-        rect = event.rect()  # ziskame informace o rrekreslovane oblasti
+        rect = event.rect()  # ziskame informace o prekreslovane oblasti
 
         # zjistime, jakou oblast nasi matice to predstavuje
         # nesmime se pritom dostat z matice ven
@@ -67,7 +74,7 @@ class GridWidget(QtWidgets.QWidget):
                 #    color = QtGui.QColor(115, 115, 115)
                 #else:
                 #    color = QtGui.QColor(0, 255, 0)
-                
+
                 # OBRAZKY
                 # podkladova barva pod polopruhledne obrazky
                 white = QtGui.QColor(255, 255, 255)
@@ -83,7 +90,7 @@ class GridWidget(QtWidgets.QWidget):
                     SVG_SHARK.render(painter, rect)        
 
                 # vyplnime ctverecek barvou
-                painter.fillRect(rect, QtGui.QBrush(color))    
+                #painter.fillRect(rect, QtGui.QBrush(color))    
 
 def new_dialog(window, grid):
     # Vytvorime novy dialog.
@@ -106,11 +113,22 @@ def new_dialog(window, grid):
         return
 
     # Nacteni hodnot ze SpinBoxu
-    cols = dialog.findChild(QtWidgets.QSpinBox, 'widthBox').value()
-    rows = dialog.findChild(QtWidgets.QSpinBox, 'heightBox').value()
+    cols = dialog.findChild(QtWidgets.QSpinBox, 'colsBox').value()
+    rows = dialog.findChild(QtWidgets.QSpinBox, 'rowsBox').value()
+    nfish = dialog.findChild(QtWidgets.QSpinBox, 'nfishBox').value()
+    nsharks = dialog.findChild(QtWidgets.QSpinBox, 'nsharksBox').value()
 
+
+    if cols == 0 or rows == 0:
+       error = QtWidgets.QErrorMessage()
+       error.showMessage('Number of columns or rows can\'t be 0!')
+       error.exec()
+       return
+
+    wator = WaTor(shape=(rows, cols), nfish=nfish, nsharks=nsharks)
     # Vytvoreni nove mapy
-    grid.array = numpy.zeros((rows, cols), dtype=numpy.int8)
+    grid.array = wator.creatures
+    grid.energy = wator.energies
 
     # Mapa muze byt jinak velka, tak musime zmenit velikost Gridu;
     # (tento kod pouzivame i jinde, meli bychom si na to udelat funkci!)
@@ -121,8 +139,116 @@ def new_dialog(window, grid):
 
     # Prekresleni celeho Gridu
     grid.update()
-    
-            
+
+
+def save_dialog(window, grid):
+    dialog = QtWidgets.QDialog(window)
+
+    with open('savesimulation.ui') as f:
+        uic.loadUi(f, dialog)
+
+    result = dialog.exec()
+
+    if result == QtWidgets.QDialog.Rejected:
+        return
+
+#    filename = QtWidgets.QFileDialog.getSaveFileName(this, "Save File", "simulations/", "Text files (*.txt)")
+    filename = dialog.findChild(QtWidgets.QLineEdit, 'filenameLine').text()
+
+    if os.path.isfile('simulations/' + filename):
+       error = QtWidgets.QErrorMessage()
+       error.showMessage('File already exist!')
+       error.exec()
+       return
+
+    numpy.savetxt('simulations/' + filename, grid.array)
+
+
+
+def open_dialog(window, grid):
+    dialog = QtWidgets.QDialog(window)
+
+    with open('opensimulation.ui') as f:
+        uic.loadUi(f, dialog)
+
+    result = dialog.exec()
+
+    if result == QtWidgets.QDialog.Rejected:
+        return
+
+    filename = dialog.findChild(QtWidgets.QLineEdit, 'filenameLine').text()
+
+    if not os.path.isfile('simulations/' + filename):
+       error = QtWidgets.QErrorMessage()
+       error.showMessage('File does not exist!')
+       error.exec()
+       return
+
+    array = numpy.loadtxt('simulations/' + filename)
+    wator = WaTor(creatures=array)
+    grid.array = wator.creatures
+    grid.energy = wator.energies
+
+    size = logical_to_pixels(grid.array.shape[0], grid.array.shape[1])
+    grid.setMinimumSize(*size)
+    grid.setMaximumSize(*size)
+    grid.resize(*size)
+
+    grid.update()
+
+
+def next_chronon(window, grid):
+
+    wator = WaTor(creatures=grid.array, energies=grid.energy)
+
+    age_fish = window.findChild(QtWidgets.QSpinBox, 'age_fishBox').value()
+    age_shark = window.findChild(QtWidgets.QSpinBox, 'age_sharkBox').value()
+    eat = window.findChild(QtWidgets.QSpinBox, 'energy_eatBox').value()
+
+    wator.setAge_fish(age_fish)
+    wator.setAge_shark(age_shark)
+    wator.setEnergy_eat(eat)
+    wator.tick()
+    grid.array = wator.creatures
+    grid.energy = wator.energies
+
+    grid.update()
+
+
+
+def simulation(window, grid):
+
+    wator = WaTor(creatures=grid.array, energies=grid.energy)
+
+    age_fish = window.findChild(QtWidgets.QSpinBox, 'age_fishBox').value()
+    age_shark = window.findChild(QtWidgets.QSpinBox, 'age_sharkBox').value()
+    eat = window.findChild(QtWidgets.QSpinBox, 'energy_eatBox').value()
+
+    wator.setAge_fish(age_fish)
+    wator.setAge_shark(age_shark)
+    wator.setEnergy_eat(eat)
+
+    a = 0
+    while a < 10:
+       wator.tick()
+       grid.array = wator.creatures
+       grid.energy = wator.energies
+
+       grid.update()
+       window.show()
+       time.sleep(2)
+       a += 1
+
+
+
+def printAbout(window, grid):
+    about = QtWidgets.QMessageBox()
+    about.setText("WaTor simulation\n\nPython module with GUI simulating WaTor sea world\n\n2017\n\nAuthor: Lenka Stejskalova\n\nhttps://github.com/stejsle1/wator\n\nContains PyQt and graphics from OpenGameArt.org")
+    about.setWindowTitle("About")
+    about.exec()
+    return
+
+
 def main():
     app = QtWidgets.QApplication([])
 
@@ -130,22 +256,21 @@ def main():
 
     with open('mainwindow.ui') as f:
         uic.loadUi(f, window)
-        
+
     # mapa zatim nadefinovana rovnou v kodu
-    array = numpy.zeros((15, 20), dtype=numpy.int8)
-    array[:, 5] = -1  # nejaka zed
+    wator = WaTor(shape=(15, 20), nfish=10, nsharks=10)
 
     # ziskame oblast s posuvniky z Qt Designeru
     scroll_area = window.findChild(QtWidgets.QScrollArea, 'scrollArea')
 
     # dame do ni nas grid
-    grid = GridWidget(array)
-    scroll_area.setWidget(grid)    
-    
+    grid = GridWidget(wator.creatures, wator.energies)
+    scroll_area.setWidget(grid)
+
     # ziskame paletu vytvorenou v Qt Designeru
     palette = window.findChild(QtWidgets.QListWidget, 'palette')
 
-    for name, svg, num in ('Water', 'water.svg', 1),('Fish', 'fish.svg', 2),('Shark', 'shakr.svg', 3):
+    for name, svg, num in ('Water', 'water.svg', 0),('Fish', 'fish.svg', 1),('Shark', 'shark.svg', -1):
        item = QtWidgets.QListWidgetItem(name)  # vytvorime polozku
        icon = QtGui.QIcon(svg)  # ikonu
        item.setIcon(icon)  # priradime ikonu polozce
@@ -160,15 +285,33 @@ def main():
         # zakazano (v Designeru selectionMode=SingleSelection).
         # Projdeme "vsechny vybrane polozky", i kdyz vime ze bude max. jedna.
         for item in palette.selectedItems():
-            print(item.data(VALUE_ROLE))
+            #print(item.data(VALUE_ROLE))
+            grid.selected = item.data(VALUE_ROLE)
 
     palette.itemSelectionChanged.connect(item_activated)
-    palette.setCurrentRow(1) # aby to nesletelo, protoze neni nic vybrano
-    
+    palette.setCurrentRow(0) # aby to nesletelo, protoze neni nic vybrano
+
+
     # Napojeni signalu actionNew.triggered
-    action = window.findChild(QtWidgets.QAction, 'actionNew')
-    action.triggered.connect(lambda: new_dialog(window, grid))
-    
+    action1 = window.findChild(QtWidgets.QAction, 'actionNew')
+    action1.triggered.connect(lambda: new_dialog(window, grid))
+
+    action2 = window.findChild(QtWidgets.QAction, 'actionNext_chronon')
+    action2.triggered.connect(lambda: next_chronon(window, grid))
+
+    action3 = window.findChild(QtWidgets.QAction, 'actionSave')
+    action3.triggered.connect(lambda: save_dialog(window, grid))
+
+    action4 = window.findChild(QtWidgets.QAction, 'actionOpen')
+    action4.triggered.connect(lambda: open_dialog(window, grid))
+
+    action5 = window.findChild(QtWidgets.QAction, 'actionSim')
+    action5.triggered.connect(lambda: simulation(window, grid))
+
+    action6 = window.findChild(QtWidgets.QAction, 'actionAbout')
+    action6.triggered.connect(lambda: printAbout(window, grid))
+
+
     window.show()
 
     return app.exec()

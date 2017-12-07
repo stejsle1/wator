@@ -59,11 +59,10 @@
         <rect>
          <x>0</x>
          <y>0</y>
-         <width>749</width>
-         <height>754</height>
+         <width>751</width>
+         <height>748</height>
         </rect>
        </property>
-       <zorder>simulation</zorder>
       </widget>
      </widget>
     </item>
@@ -136,6 +135,7 @@
      <string>Action</string>
     </property>
     <addaction name="actionNext_chronon"/>
+    <addaction name="actionSim"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
     <property name="title">
@@ -159,6 +159,7 @@
     <bool>false</bool>
    </attribute>
    <addaction name="actionNext_chronon"/>
+   <addaction name="actionSim"/>
    <addaction name="actionQuit"/>
   </widget>
   <action name="actionNew">
@@ -189,6 +190,11 @@
   <action name="actionNext_chronon">
    <property name="text">
     <string>Next chronon</string>
+   </property>
+  </action>
+  <action name="actionSim">
+   <property name="text">
+    <string>Simulation</string>
    </property>
   </action>
  </widget>
