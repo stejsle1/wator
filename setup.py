@@ -9,8 +9,8 @@ with open('README') as f:
 
 setup(
    name='wator',
-   version='0.2',
-   keywords='wator simulation numpy fish shark',
+   version='0.3',
+   keywords='wator simulation numpy fish shark sea',
    description='Python simulation of WaTor',
    ext_modules=cythonize([Extension('wator.wator', ['wator/wator.pyx'],
                                    include_dirs=[numpy.get_include()])],
@@ -20,6 +20,7 @@ setup(
         'Cython',
         'NumPy',
         'pytest',
+        'PyQt5',
    ],
    long_description=long_description,
    author='Lenka Stejskalova',
@@ -38,5 +39,10 @@ setup(
         ],
    zip_safe=False,
    packages=find_packages(), 
+   entry_points={
+      'console_scripts': [
+          'wator = gui:main',
+      ],
+   },
 )
 

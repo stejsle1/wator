@@ -7,9 +7,9 @@ import os.path
 
 CELL_SIZE = 32
 
-SVG_WATER = QtSvg.QSvgRenderer('water.svg')
-SVG_FISH = QtSvg.QSvgRenderer('fish.svg')
-SVG_SHARK = QtSvg.QSvgRenderer('shark.svg')
+SVG_WATER = QtSvg.QSvgRenderer('wator/gui/water.svg')
+SVG_FISH = QtSvg.QSvgRenderer('wator/gui/fish.svg')
+SVG_SHARK = QtSvg.QSvgRenderer('wator/gui/shark.svg')
 
 VALUE_ROLE = QtCore.Qt.UserRole
 
@@ -99,7 +99,7 @@ def new_dialog(window, grid):
     dialog = QtWidgets.QDialog(window)
 
     # Nacteme layout z Qt Designeru.
-    with open('newsimulation.ui') as f:
+    with open('wator/gui/newsimulation.ui') as f:
         uic.loadUi(f, dialog)
 
     # Zobrazime dialog.
@@ -143,47 +143,71 @@ def new_dialog(window, grid):
 def save_dialog(window, grid):
     dialog = QtWidgets.QDialog(window)
 
-    with open('savesimulation.ui') as f:
-        uic.loadUi(f, dialog)
+    #with open('wator/gui/savesimulation.ui') as f:
+    #    uic.loadUi(f, dialog)
 
-    result = dialog.exec()
+    #result = dialog.exec()
 
-    if result == QtWidgets.QDialog.Rejected:
-        return
+    #if result == QtWidgets.QDialog.Rejected:
+    #    return
 
-#    filename = QtWidgets.QFileDialog.getSaveFileName(this, "Save File", "simulations/", "Text files (*.txt)")
-    filename = dialog.findChild(QtWidgets.QLineEdit, 'filenameLine').text()
+    filename, _filter = QtWidgets.QFileDialog.getSaveFileName(None, "Save File", "wator/gui/simulations/", "(*)")
+    #filename = dialog.findChild(QtWidgets.QLineEdit, 'filenameLine').text()
 
-    if os.path.isfile('simulations/' + filename):
-       error = QtWidgets.QErrorMessage()
-       error.showMessage('File already exist!')
-       error.exec()
+    if filename == "":
        return
 
-    numpy.savetxt('simulations/' + filename, grid.array)
+    #if os.path.isfile(filename):
+    #   error = QtWidgets.QMessageBox.critical(None, "Error", "File already exist!")
+    #   error.exec()
+    #   return
+
+    numpy.savetxt(filename, grid.array)
 
 
 
 def open_dialog(window, grid):
     dialog = QtWidgets.QDialog(window)
 
-    with open('opensimulation.ui') as f:
-        uic.loadUi(f, dialog)
+    #with open('wator/gui/opensimulation.ui') as f:
+    #    uic.loadUi(f, dialog)
 
-    result = dialog.exec()
+    #result = dialog.exec()
 
-    if result == QtWidgets.QDialog.Rejected:
-        return
+    #if result == QtWidgets.QDialog.Rejected:
+    #    return
 
-    filename = dialog.findChild(QtWidgets.QLineEdit, 'filenameLine').text()
+    filename, _filter = QtWidgets.QFileDialog.getOpenFileName(None, "Open file", 'wator/gui/simulations/', "(*)")
+    #filename = dialog.findChild(QtWidgets.QLineEdit, 'filenameLine').text()
 
-    if not os.path.isfile('simulations/' + filename):
-       error = QtWidgets.QErrorMessage()
-       error.showMessage('File does not exist!')
-       error.exec()
+    if filename == "":
        return
 
-    array = numpy.loadtxt('simulations/' + filename)
+    #if not os.path.isfile(filename):
+       #error = QtWidgets.QErrorMessage()
+       #error.showMessage('File does not exist!')
+     #  error = QtWidgets.QMessageBox.critical(None, "Error", "File does not exist!", QtWidgets.QMessageBox.Ok)
+      # error.exec()
+       #return
+
+    if os.path.getsize(filename) == 0:
+       error = QtWidgets.QMessageBox.critical(None, "Error", "File is empty!", QtWidgets.QMessageBox.Ok)
+     #  error = QtWidgets.QErrorMessage()
+     #  error.showMessage('File is empty!')
+     #  error.exec()
+       return
+
+    try:
+       array = numpy.loadtxt(filename, dtype=numpy.int8)
+    except ValueError:
+       #error = QtWidgets.QErrorMessage()
+       #error.showMessage('File does not contains data for simulation!')
+       #error.exec()
+       error = QtWidgets.QMessageBox.critical(None, "Error", "File does not contains data for simulation!", QtWidgets.QMessageBox.Ok)
+       return
+
+
+
     wator = WaTor(creatures=array)
     grid.array = wator.creatures
     grid.energy = wator.energies
@@ -242,10 +266,7 @@ def simulation(window, grid, app):
 
 
 def printAbout(window, grid):
-    about = QtWidgets.QMessageBox()
-    about.setText("WaTor simulation\n\nPython module with GUI simulating WaTor sea world\n\n2017\n\nAuthor: Lenka Stejskalova\n\nhttps://github.com/stejsle1/wator\n\nContains PyQt and graphics from OpenGameArt.org")
-    about.setWindowTitle("About")
-    about.exec()
+    about = QtWidgets.QMessageBox.about(None, "About WaTor", "<b>WaTor simulation</b><br>Python module with GUI simulating WaTor sea world<br><br>2017<br>Author: Lenka Stejskalova<br><a href=\"https://github.com/stejsle1/wator\">GitHub stejsle1/wator</a><br>Contains <a href=\"https://pypi.python.org/pypi/PyQt5/5.9.1\">PyQt5</a> and graphics from <a href=\"opengameart.org\">OpenGameArt.org</a>")
     return
 
 
@@ -254,7 +275,7 @@ def main():
 
     window = QtWidgets.QMainWindow()
 
-    with open('mainwindow.ui') as f:
+    with open('wator/gui/mainwindow.ui') as f:
         uic.loadUi(f, window)
 
     # mapa zatim nadefinovana rovnou v kodu
@@ -270,7 +291,7 @@ def main():
     # ziskame paletu vytvorenou v Qt Designeru
     palette = window.findChild(QtWidgets.QListWidget, 'palette')
 
-    for name, svg, num in ('Water', 'water.svg', 0),('Fish', 'fish.svg', 1),('Shark', 'shark.svg', -1):
+    for name, svg, num in ('Water', 'wator/gui/water.svg', 0),('Fish', 'wator/gui/fish.svg', 1),('Shark', 'wator/gui/shark.svg', -1):
        item = QtWidgets.QListWidgetItem(name)  # vytvorime polozku
        icon = QtGui.QIcon(svg)  # ikonu
        item.setIcon(icon)  # priradime ikonu polozce
@@ -319,4 +340,5 @@ def main():
 
     return app.exec()
 
-main()
+if __name__ == "__main__":
+    main()
