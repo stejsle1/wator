@@ -31,7 +31,7 @@ class GridWidget(QtWidgets.QWidget):
         self.setMinimumSize(*size)
         self.setMaximumSize(*size)
         self.resize(*size)
-        
+
     def mousePressEvent(self, event):
         # prevedeme klik na souradnice matice
         row, column = pixels_to_logical(event.x(), event.y())
@@ -40,7 +40,7 @@ class GridWidget(QtWidgets.QWidget):
         if 0 <= row < self.array.shape[0] and 0 <= column < self.array.shape[1]:
             self.array[row, column] = self.selected
             if self.selected < 0:
-               self.energy[row, column] = 5
+               self.energy[row, column] = self.initEnergy
 
             # timto zajistime prekresleni widgetu v miste zmeny:
             # (pro Python 3.4 a nizsi volejte jen self.update() bez argumentu)
@@ -87,10 +87,10 @@ class GridWidget(QtWidgets.QWidget):
                 if self.array[row, column] > 0:
                     SVG_FISH.render(painter, rect)
                 if self.array[row, column] < 0:
-                    SVG_SHARK.render(painter, rect)        
+                    SVG_SHARK.render(painter, rect)
 
                 # vyplnime ctverecek barvou
-                #painter.fillRect(rect, QtGui.QBrush(color))    
+                #painter.fillRect(rect, QtGui.QBrush(color))
 
 def new_dialog(window, grid):
     # Vytvorime novy dialog.
@@ -117,7 +117,6 @@ def new_dialog(window, grid):
     rows = dialog.findChild(QtWidgets.QSpinBox, 'rowsBox').value()
     nfish = dialog.findChild(QtWidgets.QSpinBox, 'nfishBox').value()
     nsharks = dialog.findChild(QtWidgets.QSpinBox, 'nsharksBox').value()
-
 
     if cols == 0 or rows == 0:
        error = QtWidgets.QErrorMessage()
@@ -205,6 +204,7 @@ def next_chronon(window, grid):
     age_shark = window.findChild(QtWidgets.QSpinBox, 'age_sharkBox').value()
     eat = window.findChild(QtWidgets.QSpinBox, 'energy_eatBox').value()
 
+
     wator.setAge_fish(age_fish)
     wator.setAge_shark(age_shark)
     wator.setEnergy_eat(eat)
@@ -216,7 +216,7 @@ def next_chronon(window, grid):
 
 
 
-def simulation(window, grid):
+def simulation(window, grid, app):
 
     wator = WaTor(creatures=grid.array, energies=grid.energy)
 
@@ -235,8 +235,8 @@ def simulation(window, grid):
        grid.energy = wator.energies
 
        grid.update()
-       window.show()
-       time.sleep(2)
+       time.sleep(1)
+       app.processEvents()
        a += 1
 
 
@@ -306,14 +306,17 @@ def main():
     action4.triggered.connect(lambda: open_dialog(window, grid))
 
     action5 = window.findChild(QtWidgets.QAction, 'actionSim')
-    action5.triggered.connect(lambda: simulation(window, grid))
+    action5.triggered.connect(lambda: simulation(window, grid, app))
 
     action6 = window.findChild(QtWidgets.QAction, 'actionAbout')
     action6.triggered.connect(lambda: printAbout(window, grid))
+
+    init = window.findChild(QtWidgets.QSpinBox, 'energy_initialBox').value()
+    grid.initEnergy = init
 
 
     window.show()
 
     return app.exec()
 
-main()        
+main()

@@ -112,7 +112,7 @@ class WaTor():
                ways += 1
                
             if ways != 0:
-               if creatures[i,j] == self.age_fish:
+               if creatures[i,j] >= self.age_fish:
                   value = 0
                else:
                   value = creatures[i,j] 
@@ -133,12 +133,12 @@ class WaTor():
                   if ran[a] == 4 and creatures2[i,(j-1)%size1] == 0:
                      creatures2[i,(j-1)%size1] = value + 1
                      break
-               if creatures[i,j] == self.age_fish:
+               if creatures[i,j] >= self.age_fish:
                   creatures2[i,j] = 1
                else:
                   creatures2[i,j] = 0       
             else:
-               if creatures[i,j] == self.age_fish:
+               if creatures[i,j] >= self.age_fish:
                   creatures2[i,j] = self.age_fish
                   continue
                else:
@@ -164,7 +164,7 @@ class WaTor():
                ways += 1
                
             if ways != 0:  # je tam ryba
-               if creatures[i,j] == -1*self.age_shark:
+               if creatures[i,j] <= -1*self.age_shark:
                   value = 0
                   creatures2[i,j] = -1
                   energies2[i,j] = energies[i,j]
@@ -204,7 +204,7 @@ class WaTor():
                   ways += 1
                
                if ways != 0:
-                  if creatures[i,j] == -1*self.age_shark:
+                  if creatures[i,j] <= -1*self.age_shark:
                      value = 0
                      creatures2[i,j] = -1
                      energies2[i,j] = energies[i,j]
@@ -234,7 +234,7 @@ class WaTor():
                         energies2[i,(j-1)%size1] = energies[i,j]
                         break
                else:  # neni misto
-                  if creatures[i,j] == -1*self.age_shark:
+                  if creatures[i,j] <= -1*self.age_shark:
                      creatures2[i,j] = -1*self.age_shark
                      continue
                   else:
@@ -265,3 +265,13 @@ class WaTor():
       cdef int result
       boolarr = self.creatures < 0
       return numpy.sum(boolarr, dtype='int64')
+
+   def setAge_fish(self, age):
+      self.age_fish = age
+   
+   def setAge_shark(self, age):
+      self.age_shark = age
+
+   def setEnergy_eat(self, eat):
+      self.eat = eat
+
