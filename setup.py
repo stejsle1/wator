@@ -3,7 +3,7 @@ from distutils.extension import Extension
 from Cython.Build import cythonize
 import numpy
 
-with open('README') as f:
+with open('README.rst') as f:
     long_description = ''.join(f.readlines())
 
 
